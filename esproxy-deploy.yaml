@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: esproxy
+  name: esproxy
+spec:
+  selector:
+    matchLabels:
+      app: esproxy
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: esproxy
+    spec:
+      containers:
+      - image: abutaha/aws-es-proxy:v1.0
+        imagePullPolicy: IfNotPresent
+        name: tiny-web-app
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        args: ["-endpoint", "<VPC endpoint>","-listen","0.0.0.0:9200"]
+        volumeMounts:
+        - name: escreds
+          mountPath: "/root/.aws"
+          readOnly: true
+      serviceAccountName: fluent-bit
+      dnsPolicy: Default
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: escreds
+        secret:
+          secretName: escreds
+status: {}
